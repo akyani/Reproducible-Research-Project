@@ -1,0 +1,91 @@
+---
+title: "Reproducible Research Project"
+output: html_document
+---
+
+First set the working directory:
+
+```{r setup, include=FALSE}
+setwd("C:/Users/akyani/Documents/Data Science/Fifth/Second Week/Project/Factivity/")
+
+```
+Then load Data
+```{r}
+data = read.csv ("activity.csv")
+```
+Here are the answers to each part of the project:
+
+Histogram of the total number of steps taken each day
+``` {r}
+library(dplyr)
+by_day = group_by(data,date)
+total_by_day = summarise(by_day,total = sum(steps))
+```
+Here is the plot 
+``` {r}
+hist(total_by_day$total,main = "Total Steps in Each Day", xlab = "Steps")
+```
+
+Mean and median number of steps taken each day
+```{r}
+dataMean = summarise(by_day,mean = mean(steps,na.rm = TRUE))
+dataMedian= summarise(by_day,median = median(steps,na.rm = TRUE))
+```
+
+Time series plot of the average number of steps taken
+
+```{r}
+by_interval = group_by(data,interval)
+mean_by_interval = summarise(by_interval,mean = mean(steps,na.rm = TRUE))
+plot(mean_by_interval$mean,type = "l",xlab = "Interval",ylab = "Average")
+```
+
+The 5-minute interval that, on average, contains the maximum number of step
+```{r}
+by_interval = group_by(data,interval)
+max_by_interval = summarise(by_interval,max = max(steps,na.rm = TRUE))
+```
+
+Code to describe and show a strategy for imputing missing data
+```{r}
+NAData= sum(is.na(data))
+```
+
+Backup for data 
+```{r}
+imputed_data = data
+```
+
+Merge it to replace the NA values
+
+```{r}
+data3 = merge (data,mean_by_interval)
+imputed_data$steps = ifelse(is.na(imputed_data$steps), data3$mean,data$steps)
+```
+
+Histogram of the total number of steps taken each day after missing values are imputed
+```{r}
+
+by_day_impute = group_by(imputed_data,date)
+dataMean_impute = summarise(by_day,total = sum(steps,na.rm = TRUE))
+hist(dataMean_impute$total,main = "Total Steps in Each Day", xlab = "Steps")
+```
+
+Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+
+```{r}
+# Convert date to weekdays
+
+imputed_data$day = weekdays(as.Date(imputed_data$date))
+
+by_interval = imputed_data %>% group_by(interval,day) %>% summarise(average = mean(steps))
+
+weekends = subset(by_interval,day %in% c("Saturday","Sunday"))
+weekdays = subset(by_interval,!day %in% c("Saturday","Sunday"))
+
+
+par(mfrow=c(2,1))
+plot(weekends$average, type = "l",xlab = "Interval",ylab = "Average")
+plot(weekdays$average, type = "l",xlab = "Interval",ylab = "Average")
+```
+
